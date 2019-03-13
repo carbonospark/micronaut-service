@@ -12,8 +12,9 @@
 	<url>http://maven.apache.org</url>
 
 	<properties>
-		<jdk.version>1.8</jdk.version>
+		<exec.mainClass>com.carbonospark.micronaut.Application</exec.mainClass>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<jdk.version>1.8</jdk.version>
 		<swagger.version>2.0.7</swagger.version>
 		<lombok.version>1.18.6</lombok.version>
 		<logback.version>1.2.3</logback.version>
@@ -35,18 +36,18 @@
 			<artifactId>lombok</artifactId>
 			<version>${lombok.version}</version>
 		</dependency>
-		<!-- Logback -->		
+		<!-- Logback -->
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>${logback.version}</version>
-			<scope>runtime</scope>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.github.jknack</groupId>
 			<artifactId>handlebars</artifactId>
 			<version>${jknack.version}</version>
-			<scope>runtime</scope>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.swagger.core.v3</groupId>
@@ -68,6 +69,71 @@
 		</dependency>
 	</dependencies>
 	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>${exec.mainClass}</mainClass>
+								</transformer>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.6.0</version>
+				<configuration>
+					<executable>java</executable>
+					<arguments>
+						<argument>-noverify</argument>
+						<argument>-XX:TieredStopAtLevel=1</argument>
+						<argument>-classpath</argument>
+						<classpath />
+						<argument>${exec.mainClass}</argument>
+					</arguments>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>0.10.0</version>
+				<configuration>
+					<to>
+						<image>${project.groupId}/${project.name}</image>
+					</to>
+					<from>
+						<image>openjdk:8u171-alpine3.7</image>
+					</from>
+					<container>
+						<useCurrentTimestamp>true</useCurrentTimestamp>
+						<mainClass>${exec.mainClass}</mainClass>
+					</container>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>install</phase>
+						<goals>
+							<goal>dockerBuild</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 		<pluginManagement>
 			<plugins>
 				<plugin>
